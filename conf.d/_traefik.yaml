@@ -1,0 +1,122 @@
+# Limiting the Logs to Specific Fields
+accessLog:
+  filePath: "/logs/traefik-access.log"
+  format: json
+  bufferingSize: 100  # Configuring a buffer of 100 lines
+  # filters:
+  #   statusCodes: "400-599"
+  fields:
+    defaultMode: drop
+    headers:
+      defaultMode: drop
+      names:
+        "User-Agent": keep
+    names:
+      "@timestamp": keep
+      "ClientAddr": keep
+      "ClientHost": keep
+      "TLSCipher": keep
+      "TLSVersion": keep
+      "RequestProtocol": keep
+      "RequestScheme": keep
+      "RouterName": keep
+      "ServiceAddr": keep
+      "ServiceName": keep
+      "ServiceURL": keep
+      "RequestHost": keep
+      "RequestMethod": keep
+      "RequestPath": keep
+      "RequestAddr": keep
+      "time": keep
+      "request_Referer": keep
+      "request_Sec-Ch-Ua": keep
+      "request_Sec-Ch-Ua-Mobile": keep
+      "request_Sec-Ch-Ua-Platform": keep
+      "request_X-Real-Ip": keep
+      "OriginContentSize": keep
+      "OriginDuration": keep
+      "OriginStatus": keep
+      "origin_X-Ausername": keep
+      "host.ip": keep
+      "downstream_Page-Title": keep
+      "downstream_X-Ausername": keep
+
+log:
+  level: WARN  # ERROR, DEBUG, PANIC, FATAL, ERROR, WARN, INFO
+
+providers:
+  docker:
+    exposedByDefault: false
+    endpoint: 'unix:///var/run/docker.sock'
+  file:
+    directory: /etc/traefik/conf.d
+    watch: true
+
+api:
+  dashboard: true # if you don't need the dashboard disable it
+  debug: true
+  insecure: true
+
+entryPoints:
+  web:
+    address: ":80"
+    forwardedHeaders:
+      insecure: true
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+  websecure:
+    address: ":443"
+    forwardedHeaders:
+      insecure: true
+    transport:
+      respondingTimeouts:
+        readTimeout: 0s
+
+# set more secure TLS options,
+# see https://doc.traefik.io/traefik/v2.5/https/tls/
+tls:
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /certs/ca.cert
+        keyFile: /certs/private.key
+  options:
+    default:
+      minVersion: VersionTLS12
+      cipherSuites:
+        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305
+        - TLS_AES_128_GCM_SHA256
+        - TLS_AES_256_GCM_SHA384
+        - TLS_CHACHA20_POLY1305_SHA256
+      curvePreferences:
+        - CurveP521
+        - CurveP384
+
+certificatesResolvers:
+  myresolver:
+    acme:
+      caServer: https://acme-v02.api.letsencrypt.org/directory # IMPORTANT: comment out this line to get production ready certificates. After this, clear acme.json file.
+      email: example@gmail.com
+      storage: /letsencrypt/acme.json # chmod 600 this file on the host system
+      tlsChallenge: {}
+      httpChallenge:
+        entryPoint: web
+global:
+  checkNewVersion: true
+  sendAnonymousUsage: true # disable this if you don't want to send anonymous usage data to traefik
+
+http:
+  serversTransports:
+      insecure-transport:
+        insecureSkipVerify: true
+
+# experimental:
+#   plugins:
+#     cloudflarewarp:
+#       moduleName: "github.com/BetterCorp/cloudflarewarp"
+#       version: "v1.3.3"

@@ -1,0 +1,110 @@
+# Middlewares
+http:
+  middlewares:
+    auth:
+      basicAuth:
+        users:
+          # To create a user:password pair, the following command can be used:
+          # echo $(htpasswd -nb user password) | sed -e s/\\$/\\$\\$/g
+          - "user:$$apr1$$7NonXZa2$$ON7eQhvZvnjgLpBA6KPoA0"
+        removeheader: true
+
+    # define some security header options,
+    # see https://doc.traefik.io/traefik/v2.5/middlewares/http/headers/
+    secHeaders:
+      headers:
+        browserXssFilter: true
+        contentTypeNosniff: true
+        frameDeny: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 31536000
+        customFrameOptionsValue: "SAMEORIGIN"
+        customResponseHeaders:
+          # prevent some applications to expose too much information by removing thise headers:
+          server: ""
+          x-powered-by: ""
+
+    autodetectContenttype: # needed for traefik v3 - see https://doc.traefik.io/traefik/v3.0/migration/v2-to-v3/
+      contentType: {}
+          
+    api-add-prefix:
+      addPrefix:
+        prefix: "/api/"
+
+    strip-api-path:
+      stripPrefix:
+        prefixes:
+          - "/api/"
+
+    no-cache:
+      headers:
+        customResponseHeaders:
+          Cache-Control: "no-cache, no-store, must-revalidate"
+          Pragma: "no-cache"
+          Expires: "0"
+
+    remove-cookie:
+      headers:
+        customRequestHeaders:
+          Cookie: ""
+
+    stripregex-api-path:
+      stripprefixregex:
+        regex:
+          - "/api/[a-z0-9]+/[0-9]+/"
+
+    https-redirectscheme:
+      redirectScheme:
+        scheme: https
+        permanent: true
+    
+    HSTS-header:
+      headers:
+        stsSeconds: 15552000
+        referrerPolicy: no-referrer
+        forceSTSHeader: true
+        stsPreload: true
+        stsIncludeSubdomains: true
+        browserXssFilter: true
+        customRequestHeaders:
+          X-Forwarded-Proto: https
+
+    upload-limit:
+      buffering:
+        maxRequestBodyBytes: 15971520   # Set to 15 MB
+        memRequestBodyBytes: 20000000
+        maxResponseBodyBytes: 15971520
+        memResponseBodyBytes: 20000000
+
+    my-ipwhitelist:
+      ipAllowList:
+        sourceRange:
+          - "127.0.0.0/8"
+          - "192.168.0.0/16"
+          - "172.0.0.0/8"
+          # Cloudflare IP Ranges
+          - "173.245.48.0/20"
+          - "103.21.244.0/22"
+          - "103.22.200.0/22"
+          - "103.31.4.0/22"
+          - "141.101.64.0/18"
+          - "108.162.192.0/18"
+          - "190.93.240.0/20"
+          - "188.114.96.0/20"
+          - "197.234.240.0/22"
+          - "198.41.128.0/17"
+          - "162.158.0.0/15"
+          - "104.16.0.0/13"
+          - "104.24.0.0/14"
+          - "172.64.0.0/13"
+          - "131.0.72.0/22"
+
+    compresstraefik:
+      compress: {}
+    
+    example-redirect:
+      redirectRegex:
+        regex: "(.*)"
+        replacement: "https://example.com/"
+

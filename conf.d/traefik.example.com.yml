@@ -1,0 +1,17 @@
+###############################################################################
+#     traefik.example.com
+###############################################################################
+http:
+  routers:
+    api:
+      entrypoints:
+        - websecure
+      service: api@internal
+      rule: "Host(`traefik.example.com`)"
+      tls:
+        certResolver: "myresolver"
+      middlewares:
+        - secHeaders
+        - autodetectContenttype
+        - my-ipwhitelist
+        - auth 

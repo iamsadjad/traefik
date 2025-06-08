@@ -1,0 +1,22 @@
+###############################################################################
+#     example.example.com
+###############################################################################
+http:
+  routers:
+    example-route:
+      entrypoints:
+        - websecure
+      service: example-server
+      rule: "Host(`example.example.com`)"
+      tls:
+        certResolver: "myresolver"
+      middlewares:
+        - secHeaders
+        - autodetectContenttype
+        - my-ipwhitelist
+        
+  services:
+    example-server:
+      loadBalancer:
+        servers:
+          - url: "http://nginx:8080"

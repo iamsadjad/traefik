@@ -1,0 +1,77 @@
+networks:
+  traefik:
+    driver: bridge
+
+services:
+  traefik:
+    image: traefik:v3
+    container_name: traefik
+    restart: always
+    command:
+      - "--log.level=DEBUG"
+      - "--providers.file.directory=/etc/traefik/conf.d"
+      - "--providers.file.watch=true"
+      - "--api.debug=true"
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+    environment:
+      - TZ=Asia/Tehran
+    ports:
+      - 443:443
+      - 80:80
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./letsencrypt:/letsencrypt
+      - ./logs:/logs
+      - ./conf.d/_traefik.yaml:/etc/traefik/traefik.yaml:ro
+      - ./conf.d:/etc/traefik/conf.d
+      - ./certs:/certs
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "2m"
+        max-file: "4"
+    networks:
+      - traefik
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-html
+    restart: always
+    profiles: ["nginx"]
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/www:/usr/share/nginx
+    networks:
+      - traefik
+
+  syslog:
+    image: rsyslog/syslog_appliance_alpine
+    container_name: rsyslog
+    restart: always
+    profiles: ["syslog"]
+    volumes:
+      - ./rsyslog.conf:/etc/rsyslog.conf
+      - ./logs:/logs
+    depends_on:
+      - traefik
+    networks:
+      - traefik
+
+  logrotate:
+    image: blacklabelops/logrotate
+    container_name: logrotate
+    restart: always
+    profiles: ["logrotate"]
+    volumes:
+      - ./logs:/logs
+    environment:
+      - LOGS_DIRECTORIES=/logs
+      - LOGROTATE_INTERVAL=daily
+      - LOGROTATE_COMPRESSION=compress
+      - TZ=Asia/Tehran
+      - LOGROTATE_MAXAGE=90
+    depends_on:
+      - traefik
+    networks:
+      - traefik
